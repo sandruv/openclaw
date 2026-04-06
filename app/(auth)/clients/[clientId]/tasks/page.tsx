@@ -1,18 +1,15 @@
-'use client'
-
-import { useParams } from 'next/navigation'
+import { PREVIEW_PARAMS } from '@/lib/preview-params'
 import { ClientTasksTable } from '@/components/clients/clients-tab/details/ClientTasksTable'
-import { notFound } from 'next/navigation'
 
-export default function TasksPage() {
-  const params = useParams()
-  
-  if (!params?.clientId) {
-    notFound()
-  }
+interface TasksPageProps {
+  params: Promise<{ clientId: string }>
+}
 
-  // If we get here, we know clientId exists and is a string
-  const clientId = Array.isArray(params.clientId) ? params.clientId[0] : params.clientId
-  
+export default async function TasksPage({ params }: TasksPageProps) {
+  const { clientId } = await params
   return <ClientTasksTable clientId={clientId} />
+}
+
+export async function generateStaticParams() {
+  return [{ clientId: PREVIEW_PARAMS.clientId }];
 }

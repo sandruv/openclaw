@@ -1,3 +1,4 @@
+import { PREVIEW_PARAMS } from '@/lib/preview-params'
 import { AdminPatchEditPage } from '@/components/admin/pages/patch-updates/PatchEditPage';
 
 interface EditPatchUpdatePageProps {
@@ -11,4 +12,8 @@ export default async function EditPatchUpdatePage({ params }: EditPatchUpdatePag
   const patchUpdateId = parseInt(id);
   
   return <AdminPatchEditPage patchUpdateId={patchUpdateId} />;
+}
+
+export async function generateStaticParams() {
+  return [{ id: PREVIEW_PARAMS.id }];
 }

@@ -1,10 +1,15 @@
-"use client";
-import { SMSPage } from "@/components/sms/sms-page/";
-import { useParams } from 'next/navigation';
+import { PREVIEW_PARAMS } from '@/lib/preview-params'
+import SMSConversationPageClient from './SMSConversationPageClient'
 
-export default function SMSConversationPage() {
-  const params = useParams(); // Get params object
-  const id = params?.id as string; // Use optional chaining and type assertion
+interface SMSConversationPageProps {
+  params: Promise<{ id: string }>
+}
 
-  return <SMSPage id={id} />;
+export default async function SMSConversationPage({ params }: SMSConversationPageProps) {
+  const { id } = await params
+  return <SMSConversationPageClient id={id} />
+}
+
+export async function generateStaticParams() {
+  return [{ id: PREVIEW_PARAMS.id }];
 }

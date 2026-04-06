@@ -1,18 +1,15 @@
-'use client'
-
-import { useParams } from 'next/navigation'
+import { PREVIEW_PARAMS } from '@/lib/preview-params'
 import { ClientUsersTable } from '@/components/clients/clients-tab/details/ClientUsersTable'
-import { notFound } from 'next/navigation'
 
-export default function UsersPage() {
-  const params = useParams()
-  
-  if (!params?.clientId) {
-    notFound()
-  }
+interface UsersPageProps {
+  params: Promise<{ clientId: string }>
+}
 
-  // If we get here, we know clientId exists and is a string
-  const clientId = Array.isArray(params.clientId) ? params.clientId[0] : params.clientId
-
+export default async function UsersPage({ params }: UsersPageProps) {
+  const { clientId } = await params
   return <ClientUsersTable clientId={clientId} />
+}
+
+export async function generateStaticParams() {
+  return [{ clientId: PREVIEW_PARAMS.clientId }];
 }

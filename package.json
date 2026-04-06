@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "build:static": "next build",
+    "deploy:devsite": "HOSTINGER_PASSWORD=\"$HOSTINGER_PASSWORD\" ./scripts/deploy-devsite.sh"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^0.1.10",

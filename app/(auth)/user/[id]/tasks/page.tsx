@@ -1,15 +1,15 @@
-'use client'
-
-import { useParams, notFound } from 'next/navigation'
+import { PREVIEW_PARAMS } from '@/lib/preview-params'
 import { UserTasksTab } from '@/components/clients/users-tab/details/UserTasksTab'
 
-export default function UserTasksPage() {
-  const params = useParams()
-  
-  if (!params?.id) {
-    notFound()
-  }
+interface UserTasksPageProps {
+  params: Promise<{ id: string }>
+}
 
-  const userId = Array.isArray(params.id) ? params.id[0] : params.id
-  return <UserTasksTab userId={Number(userId)} />
+export default async function UserTasksPage({ params }: UserTasksPageProps) {
+  const { id } = await params
+  return <UserTasksTab userId={Number(id)} />
+}
+
+export async function generateStaticParams() {
+  return [{ id: PREVIEW_PARAMS.id }];
 }

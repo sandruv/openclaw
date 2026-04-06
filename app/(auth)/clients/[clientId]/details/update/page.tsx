@@ -1,41 +1,15 @@
-'use client'
+import { PREVIEW_PARAMS } from '@/lib/preview-params'
+import UpdateClientPageClient from './UpdateClientPageClient'
 
-import { useParams } from "next/navigation"
-import { useClientStore } from "@/stores/useClientStore"
-import { useEffect, useState } from "react"
-import { UpdateClientForm } from "@/components/clients/clients-tab/update"
-import { Client } from "@/types/clients"
-import { Loader2 } from "lucide-react"
+interface UpdateClientPageProps {
+  params: Promise<{ clientId: string }>
+}
 
-export default function UpdateClientPage() {
-  const params = useParams()
-  const { client: initialClient } = useClientStore()
-  const [client, setClient] = useState<Client | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+export default async function UpdateClientPage({ params }: UpdateClientPageProps) {
+  const { clientId } = await params
+  return <UpdateClientPageClient clientId={clientId} />
+}
 
-  useEffect(() => {
-    const fetchClient = async () => {
-      if (params?.clientId) {
-        try {
-          setClient(initialClient)
-        } catch (error) {
-          console.error('Error fetching client:', error)
-        } finally {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    fetchClient()
-  }, [params?.clientId, initialClient])
-
-  if (!client) {
-    return <div>Client not found</div>
-  }
-
-  return (
-    <div className="container-fluid">
-      <UpdateClientForm client={client} />
-    </div>
-  )
+export async function generateStaticParams() {
+  return [{ clientId: PREVIEW_PARAMS.clientId }];
 }

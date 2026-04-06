@@ -1,11 +1,15 @@
-'use client'
+import { PREVIEW_PARAMS } from '@/lib/preview-params'
+import TasksNewDetailPageClient from './TasksNewDetailPageClient'
 
-import { useParams } from 'next/navigation'
-import { TasksNewShell } from '@/components/tasks-new/'
+interface TasksNewDetailPageProps {
+  params: Promise<{ id: string }>
+}
 
-export default function TasksNewDetailPage() {
-  const params = useParams()
-  const taskId = params.id ? (Array.isArray(params.id) ? params.id[0] : params.id) : undefined
+export default async function TasksNewDetailPage({ params }: TasksNewDetailPageProps) {
+  const { id } = await params
+  return <TasksNewDetailPageClient taskId={id} />
+}
 
-  return <TasksNewShell selectedId={taskId} />
+export async function generateStaticParams() {
+  return [{ id: PREVIEW_PARAMS.id }];
 }

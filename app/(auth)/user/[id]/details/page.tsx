@@ -1,14 +1,15 @@
-'use client'
+import { PREVIEW_PARAMS } from '@/lib/preview-params'
+import UserDetailsPageClient from './UserDetailsPageClient'
 
-import { UserDetailsTab } from '@/components/clients/users-tab/details/UserDetailsTab'
-import { useUserStore } from '@/stores/useUserStore'
+interface UserDetailsPageProps {
+  params: Promise<{ id: string }>
+}
 
-export default function UserDetailsPage() {
-  const { user } = useUserStore()
-  
-  if (!user) {
-    return "No user found"
-  }
+export default async function UserDetailsPage({ params }: UserDetailsPageProps) {
+  await params
+  return <UserDetailsPageClient />
+}
 
-  return <UserDetailsTab user={user} />
+export async function generateStaticParams() {
+  return [{ id: PREVIEW_PARAMS.id }];
 }

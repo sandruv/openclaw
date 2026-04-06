@@ -1,16 +1,15 @@
-'use client'
-
-import { useParams, notFound } from 'next/navigation'
+import { PREVIEW_PARAMS } from '@/lib/preview-params'
 import { ClientSitesTable } from '@/components/clients/clients-tab/details/ClientSitesTable'
 
-export default function SitesPage() {
-  const params = useParams()
-  
-  if (!params?.clientId) {
-    notFound()
-  }
+interface SitesPageProps {
+  params: Promise<{ clientId: string }>
+}
 
-  const clientId = Array.isArray(params.clientId) ? params.clientId[0] : params.clientId
-
+export default async function SitesPage({ params }: SitesPageProps) {
+  const { clientId } = await params
   return <ClientSitesTable clientId={clientId} />
+}
+
+export async function generateStaticParams() {
+  return [{ clientId: PREVIEW_PARAMS.clientId }];
 }

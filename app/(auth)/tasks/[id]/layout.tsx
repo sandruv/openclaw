@@ -21,9 +21,9 @@ export default function TaskLayout({ children }: {
   
   return (
     <TaskDetails
-      thread={<ThreadPage />}
-      details={ <DetailsPage />}
-      knowledgebase={<KnowledgebasePage />}
+      thread={<ThreadPage params={Promise.resolve({ id: taskId })} />}
+      details={<DetailsPage params={Promise.resolve({ id: taskId })} />}
+      knowledgebase={<KnowledgebasePage params={Promise.resolve({ id: taskId })} />}
       taskId={taskId}
     >
       {children}

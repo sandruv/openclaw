@@ -46,9 +46,9 @@ export function TaskDetailsPanel({ selectedId }: TaskDetailsPanelProps) {
   return (
     <TaskDetails
       taskId={selectedId}
-      thread={<ThreadPage />}
-      details={<DetailsPage />}
-      knowledgebase={<KnowledgebasePage />}
+      thread={<ThreadPage params={Promise.resolve({ id: selectedId })} />}
+      details={<DetailsPage params={Promise.resolve({ id: selectedId })} />}
+      knowledgebase={<KnowledgebasePage params={Promise.resolve({ id: selectedId })} />}
     />
   )
 }

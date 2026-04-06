@@ -1,12 +1,13 @@
-'use client'
+import { PREVIEW_PARAMS } from '@/lib/preview-params'
+interface TaskPageProps {
+  params: Promise<{ id: string }>
+}
 
-import { useEffect } from 'react'
-import { useParams } from 'next/navigation'
-import { notFound } from 'next/navigation'
-import { useTaskDetailsStore } from '@/stores/useTaskDetailsStore'
-import { Spinner } from '@/components/ui/spinner'
-
-export default function TaskPage() {
-  // The actual content will be rendered by the parallel routes
+export default async function TaskPage({ params }: TaskPageProps) {
+  await params
   return null
+}
+
+export async function generateStaticParams() {
+  return [{ id: PREVIEW_PARAMS.id }];
 }
