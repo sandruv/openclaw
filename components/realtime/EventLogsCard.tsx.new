@@ -1,0 +1,445 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Download, Trash2, Clock, ChevronUp, ChevronDown } from 'lucide-react';
+import useRealtime from '@/hooks/useRealtime';
+import { Channel } from '@/lib/realtime/types';
+
+// Define a type that includes all possible properties we might need
+type RealtimeService = {
+  connectionInfo?: {
+    state: string;
+    socketId: string | null;
+  };
+  subscribedChannels?: Channel[];
+  getSubscribedChannels?: () => Channel[];
+  on?: (channelName: string, eventName: string, callback: (event: string, data: any) => void) => (() => void);
+  off?: (channelName: string, eventName: string, callback?: Function) => void;
+  // Add any other properties you might need
+  [key: string]: any;
+};
+
+// Event log structure
+interface EventLog {
+  id: string;
+  timestamp: Date;
+  channel: string;
+  event: string;
+  type: string;
+  data: any;
+}
+
+export function EventLogsCard() {
+  // Get the realtime service hook and cast it to our flexible type
+  const realtime = useRealtime() as RealtimeService;
+  
+  // Create a local state for subscribed channels if needed
+  const [subscribedChannels, setSubscribedChannels] = useState<Channel[]>([]);
+  const [logs, setLogs] = useState<EventLog[]>([]);
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [consoleHeight, setConsoleHeight] = useState(300);
+  const resizeRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const startYRef = useRef(0);
+  const startHeightRef = useRef(0);
+  
+  // Get connection info safely
+  const connectionInfo = realtime.connectionInfo || { state: 'disconnected', socketId: null };
+  
+  // Update subscribed channels
+  useEffect(() => {
+    const getChannels = () => {
+      try {
+        if (realtime.subscribedChannels) {
+          return realtime.subscribedChannels;
+        } else if (typeof realtime.getSubscribedChannels === 'function') {
+          return realtime.getSubscribedChannels();
+        }
+      } catch (e) {
+        console.warn('Error getting channels:', e);
+      }
+      return [];
+    };
+    
+    // Initial fetch and periodic updates
+    setSubscribedChannels(getChannels());
+    const intervalId = setInterval(() => {
+      setSubscribedChannels(getChannels());
+    }, 2000);
+    
+    return () => clearInterval(intervalId);
+  }, [realtime]);
+  
+  // Set up event listeners for all channels
+  useEffect(() => {
+    // No need to listen if not connected
+    if (connectionInfo.state !== 'connected') return;
+    
+    // Ensure the on method is available
+    if (typeof realtime.on !== 'function') {
+      console.warn('realtime.on is not a function');
+      return;
+    }
+    
+    // Set up a listener for each channel
+    const unsubscribers: Array<() => void> = [];
+    
+    // Helper to add a log entry
+    const addLogEntry = (channel: string, event: string, data: any, type: string = 'event') => {
+      const newLog: EventLog = {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: new Date(),
+        channel,
+        event,
+        type,
+        data
+      };
+      setLogs(prev => [newLog, ...prev].slice(0, 500));
+    };
+    
+    // For the global channel
+    try {
+      const unsubGlobal = realtime.on('global', '*', (event: string, data: any) => {
+        addLogEntry('global', event, data, 'system');
+      });
+      
+      if (typeof unsubGlobal === 'function') {
+        unsubscribers.push(unsubGlobal);
+      }
+    } catch (e) {
+      console.warn('Error setting up global listeners:', e);
+    }
+    
+    // For each channel
+    subscribedChannels.forEach(channel => {
+      try {
+        if (typeof realtime.on === 'function') { // Recheck function existence to be safe
+          const unsub = realtime.on(channel.name, '*', (event: string, data: any) => {
+            addLogEntry(channel.name, event, data, 'event');
+          });
+          
+          if (typeof unsub === 'function') {
+            unsubscribers.push(unsub);
+          }
+        }
+      } catch (e) {
+        console.warn(`Error setting up listeners for channel ${channel.name}:`, e);
+      }
+    });
+    
+    // Clean up listeners when component unmounts or channels change
+    return () => {
+      unsubscribers.forEach(unsub => {
+        try {
+          unsub();
+        } catch (e) {
+          console.warn('Error unsubscribing:', e);
+        }
+      });
+    };
+  }, [subscribedChannels, connectionInfo.state, realtime]);
+  
+  // Add connection established log on initial connection
+  useEffect(() => {
+    if (connectionInfo.state === 'connected' && connectionInfo.socketId) {
+      const newLog: EventLog = {
+        id: `connection-${Date.now()}`,
+        timestamp: new Date(),
+        channel: 'system',
+        event: 'connection',
+        type: 'connection',
+        data: `Connected with socket ID: ${connectionInfo.socketId}`
+      };
+      setLogs(prevLogs => [newLog, ...prevLogs]);
+    }
+  }, [connectionInfo.state, connectionInfo.socketId]);
+  
+  // Clear logs
+  const onClearLogs = useCallback(() => {
+    setLogs([]);
+  }, []);
+  
+  // Download logs as JSON
+  const downloadLogs = useCallback(() => {
+    if (logs.length === 0) return;
+    
+    const logsJson = JSON.stringify(logs, null, 2);
+    const blob = new Blob([logsJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    
+    link.href = url;
+    link.download = `realtime-logs-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [logs]);
+  
+  // Get log type color for the console UI
+  const getLogTypeColor = (type: string): string => {
+    switch (type) {
+      case 'error':
+        return '#f87171'; // red-400
+      case 'connection':
+        return '#60a5fa'; // blue-400
+      case 'subscription':
+        return '#34d399'; // emerald-400
+      case 'presence':
+        return '#c084fc'; // purple-400
+      case 'message':
+        return '#fbbf24'; // amber-400
+      default:
+        return '#94a3b8'; // slate-400
+    }
+  };
+  
+  // Format timestamp for display
+  const formatTime = (date: Date): string => {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+  
+  // Format JSON for display
+  const formatJSON = (data: any): string => {
+    try {
+      if (typeof data === 'string') {
+        try {
+          // Try to parse if it's a JSON string
+          const parsed = JSON.parse(data);
+          return JSON.stringify(parsed, null, 2);
+        } catch {
+          return data;
+        }
+      }
+      return JSON.stringify(data, null, 2);
+    } catch (err) {
+      return String(data);
+    }
+  };
+  
+  // Format JSON as a single line (for collapsed view)
+  const formatJSONOneLine = (data: any): string => {
+    try {
+      if (typeof data === 'string') {
+        try {
+          // Try to parse if it's a JSON string
+          const parsed = JSON.parse(data);
+          return JSON.stringify(parsed);
+        } catch {
+          return data;
+        }
+      }
+      return JSON.stringify(data);
+    } catch (err) {
+      return String(data);
+    }
+  };
+    
+  // Handle resize drag start
+  const onResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isDraggingRef.current = true;
+    startYRef.current = e.clientY;
+    startHeightRef.current = consoleHeight;
+    document.body.style.cursor = 'ns-resize';
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [consoleHeight]);
+  
+  // Handle resize drag move
+  const onMouseMove = useCallback((e: MouseEvent) => {
+    if (!isDraggingRef.current) return;
+    
+    const deltaY = startYRef.current - e.clientY;
+    const newHeight = Math.max(100, Math.min(600, startHeightRef.current + deltaY));
+    setConsoleHeight(newHeight);
+  }, []);
+  
+  // Handle resize drag end
+  const onMouseUp = useCallback(() => {
+    isDraggingRef.current = false;
+    document.body.style.cursor = '';
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  }, [onMouseMove]);
+  
+  // Render a single log entry in the console
+  const renderLogEntry = (log: EventLog, isLatestOnly = false) => {
+    const isSimpleEvent = 
+      typeof log.data === 'string' || 
+      typeof log.data === 'number' || 
+      typeof log.data === 'boolean';
+    
+    return (
+      <div 
+        key={log.id}
+        className={`font-mono text-sm border-l-2 pl-2 py-1 hover:bg-neutral-800/50 transition-colors ${isLatestOnly ? 'truncate max-w-full' : ''}`}
+        style={{ borderLeftColor: getLogTypeColor(log.type) }}
+        title={`${log.channel} - ${log.event}`}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-neutral-500 min-w-[65px]">{formatTime(log.timestamp)}</span>
+          <Badge className="bg-neutral-800 hover:bg-neutral-700 text-xs py-0 px-1.5" style={{ color: getLogTypeColor(log.type) }}>
+            {log.type}
+          </Badge>
+          
+          {/* Display simple event data or single-line JSON for collapsed view */}
+          {isSimpleEvent ? (
+            <span className="text-neutral-300 truncate">{String(log.data)}</span>
+          ) : isLatestOnly ? (
+            <span className="text-neutral-300 truncate text-xs">
+              {formatJSONOneLine(log.data)}
+            </span>
+          ) : null}
+        </div>
+        
+        {/* Display formatted JSON below the title when expanded */}
+        {!isSimpleEvent && !isLatestOnly && (
+          <pre className="text-xs mt-1 ml-[65px] bg-neutral-800/50 p-2 rounded-sm overflow-auto max-h-[200px] text-neutral-300 whitespace-pre-wrap border-l-2 border-neutral-700">
+            {formatJSON(log.data)}
+          </pre>
+        )}
+      </div>
+    );
+  };
+  
+  // Render component UI
+  return (
+    <div className="fixed left-0 right-0 bottom-0 z-50 transition-all duration-300 ease-in-out h-auto max-h-[calc(100vh-6rem)]">
+      {/* Main console container */}
+      <div className="shadow-lg border border-neutral-800 border-b-0 w-full h-full flex flex-col">
+        {/* Console header with controls - Entire header clickable to expand/collapse */}
+        <div 
+          className="bg-neutral-900 text-white p-2 flex items-center justify-between border-b border-neutral-800 cursor-pointer select-none"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <div className="flex items-center gap-2">
+            <div className="flex space-x-1.5">
+              { connectionInfo.state === 'connected' && (
+                <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse"></div>
+              )}
+
+              { connectionInfo.state === 'connecting' && (
+                <div className="h-3 w-3 rounded-full bg-yellow-500 animate-pulse"></div>
+              )}
+
+              { connectionInfo.state === 'disconnected' && (
+                <div className="h-3 w-3 rounded-full bg-red-500 animate-pulse"></div>
+              )}
+            </div>
+            <div className="font-mono font-medium ml-2 flex items-center">
+              <span>realtime-console</span>
+              <span className="text-emerald-400 ml-1 hidden sm:inline">~/events</span>
+              <span className="animate-blink ml-1"> ▊</span>
+            </div>
+          </div>
+          
+          <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+            {logs.length > 0 && (
+              <>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 w-7 p-0 text-gray-300 hover:text-white hover:bg-neutral-800 rounded-full"
+                        onClick={downloadLogs}
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <span>Download logs</span>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 w-7 p-0 text-gray-300 hover:text-white hover:bg-neutral-800 rounded-full"
+                        onClick={onClearLogs}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <span>Clear logs</span>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </>
+            )}
+            
+            <Badge variant="outline" className="flex gap-1 items-center bg-neutral-800 text-neutral-300 border-neutral-700">
+              <Clock className="h-3 w-3" />
+              {logs.length}
+            </Badge>
+            
+            {isExpanded ? (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 w-7 p-0 text-gray-300 hover:text-white hover:bg-neutral-800 rounded-full"
+                onClick={(e) => { e.stopPropagation(); setIsExpanded(false); }}
+              >
+                <ChevronDown className="h-3.5 w-3.5" />
+              </Button>
+            ) : (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 w-7 p-0 text-gray-300 hover:text-white hover:bg-neutral-800 rounded-full"
+                onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }}
+              >
+                <ChevronUp className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        </div>
+        
+        {/* Console area */}
+        {isExpanded && (
+          <>
+            {/* Resize handle */}
+            <div 
+              ref={resizeRef}
+              className="h-1 bg-neutral-800 cursor-ns-resize hover:bg-neutral-700 transition-colors"
+              onMouseDown={onResizeStart}
+            />
+            
+            {/* Logs container */}
+            <div 
+              className="bg-neutral-900 text-white p-2 flex-1 overflow-auto flex flex-col-reverse space-y-reverse space-y-1"
+              style={{ height: `${consoleHeight}px` }}
+            >
+              {logs.length === 0 ? (
+                <div className="text-center text-neutral-500 py-4">
+                  <p>No events logged yet.</p>
+                  <p className="text-xs">Events will appear here when they are triggered.</p>
+                </div>
+              ) : (
+                logs.map(log => renderLogEntry(log))
+              )}
+            </div>
+          </>
+        )}
+        
+        {/* Show a mini log preview when collapsed */}
+        {!isExpanded && logs.length > 0 && (
+          <div className="bg-neutral-900 text-white p-2 overflow-hidden">
+            {renderLogEntry(logs[0], true)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

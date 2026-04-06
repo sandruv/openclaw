@@ -1,0 +1,113 @@
+/* Thread Content Styles - Minimize spacing and margins */
+
+.thread-content {
+  line-height: 1.4;
+}
+
+.thread-content p {
+  margin: 0 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.thread-content h1,
+.thread-content h2,
+.thread-content h3,
+.thread-content h4,
+.thread-content h5,
+.thread-content h6 {
+  margin: 0 !important;
+  margin-bottom: 0.25rem !important;
+}
+
+.thread-content ul,
+.thread-content ol {
+  margin: 0 !important;
+  margin-bottom: 0.25rem !important;
+  padding-left: 1rem !important;
+}
+
+.thread-content li {
+  margin: 0 !important;
+}
+
+.thread-content blockquote {
+  margin: 0 !important;
+  margin-bottom: 0.25rem !important;
+  padding-left: 1rem !important;
+  border-left: 3px solid #e5e7eb !important;
+}
+
+.thread-content img {
+  margin: 0 !important;
+  margin-bottom: 0.25rem !important;
+  max-height: 200px !important;
+  width: auto !important;
+  cursor: pointer !important;
+  border-radius: 0.375rem !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.thread-content img:hover {
+  opacity: 0.9 !important;
+}
+
+.thread-content a {
+  margin: 0 !important;
+  color: #3b82f6 !important;
+  text-decoration: underline !important;
+}
+
+.thread-content a:hover {
+  color: #1d4ed8 !important;
+}
+
+.thread-content pre {
+  margin: 0 !important;
+  margin-bottom: 0.25rem !important;
+  padding: 0.75rem !important;
+  background-color: #f3f4f6 !important;
+  border-radius: 0.375rem !important;
+  overflow-x: auto !important;
+}
+
+.thread-content code {
+  margin: 0 !important;
+  padding: 0.125rem 0.375rem !important;
+  background-color: #f3f4f6 !important;
+  border-radius: 0.25rem !important;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace !important;
+  font-size: 0.875rem !important;
+}
+
+.thread-content div {
+  margin: 0 !important;
+}
+
+.thread-content span {
+  margin: 0 !important;
+}
+
+/* Dark mode styles */
+.dark .thread-content blockquote {
+  border-left-color: #4b5563 !important;
+}
+
+.dark .thread-content img {
+  border-color: #4b5563 !important;
+}
+
+.dark .thread-content a {
+  color: #60a5fa !important;
+}
+
+.dark .thread-content a:hover {
+  color: #93c5fd !important;
+}
+
+.dark .thread-content pre {
+  background-color: #1f2937 !important;
+}
+
+.dark .thread-content code {
+  background-color: #1f2937 !important;
+}

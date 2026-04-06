@@ -1,0 +1,48 @@
+/* TiptapEditor Custom Styles - Remove all margins and spacing */
+
+.tiptap-editor-content .ProseMirror {
+  outline: none;
+}
+
+.tiptap-editor-content .ProseMirror * {
+  margin: 0 !important;
+}
+
+.tiptap-editor-content .ProseMirror p {
+  margin: 0 !important;
+}
+
+.tiptap-editor-content .ProseMirror h1,
+.tiptap-editor-content .ProseMirror h2,
+.tiptap-editor-content .ProseMirror h3,
+.tiptap-editor-content .ProseMirror h4,
+.tiptap-editor-content .ProseMirror h5,
+.tiptap-editor-content .ProseMirror h6 {
+  margin: 0 !important;
+}
+
+.tiptap-editor-content .ProseMirror ul,
+.tiptap-editor-content .ProseMirror ol {
+  margin: 0 !important;
+}
+
+.tiptap-editor-content .ProseMirror li {
+  margin: 0 !important;
+}
+
+.tiptap-editor-content .ProseMirror blockquote {
+  margin: 0 !important;
+}
+
+.tiptap-editor-content .ProseMirror img {
+  margin: 0 !important;
+}
+
+.tiptap-editor-content .ProseMirror div,
+.tiptap-editor-content .ProseMirror span {
+  margin: 0 !important;
+}
+
+.tiptap-editor-content .ProseMirror a {
+  margin: 0 !important;
+}
